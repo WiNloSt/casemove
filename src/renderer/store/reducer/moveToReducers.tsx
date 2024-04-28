@@ -97,7 +97,7 @@ const initialState: MoveToReducer = {
               ...state,
               totalToMove: [] as any,
               totalItemsToMove: 0,
-              searchInput: '',
+              searchInput: action.payload.keepSearch ? state.searchInput : '',
               sortValue: 'Default'
            }
         case 'DO_CANCEL':

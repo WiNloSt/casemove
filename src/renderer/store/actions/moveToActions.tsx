@@ -8,9 +8,12 @@ export const moveToSetFull = () => {
         type: 'MOVE_TO_SET_FULL'
     }
 }
-export const moveToClearAll = () => {
+export const moveToClearAll = ({ keepSearch } = { keepSearch: false }) => {
     return {
-        type: 'MOVE_TO_CLEAR_ALL'
+        type: 'MOVE_TO_CLEAR_ALL',
+        payload: {
+            keepSearch
+        }
     }
 }
 export const doCancel = (doCancel) => {
@@ -63,10 +66,7 @@ export const moveToAddRemove = (casketID, itemID, totalItems, itemName) => {
             casketID: casketID,
             toMove: totalItems,
             itemID: itemID,
-            itemName:itemName
-            
+            itemName: itemName
         }
     }
 }
-
-

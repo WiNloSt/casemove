@@ -68,7 +68,7 @@ export default function MoveModal() {
 
           dispatch(moveModalUpdate());
           if (modalData.modalPayload['isLast']) {
-            dispatch(moveToClearAll());
+            dispatch(moveToClearAll({ keepSearch: true }));
           }
         }
         if (modalData.modalPayload['type'] == 'from') {
