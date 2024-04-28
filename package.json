@@ -75,7 +75,7 @@
       "target": [
         "nsis"
       ],
-      "sign": "./sign.js"
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": [
