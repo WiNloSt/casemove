@@ -5,6 +5,14 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
     // Since React 17 and typescript 4.1 you can safely disable the rule
     'react/react-in-jsx-scope': 'off',
+    'max-classes-per-file': 'off',
+    'promise/catch-or-return': 'off',
+    'promise/always-return': 'off',
+    'lines-between-class-members': 'off',
+    'no-console': 'off',
+    eqeqeq: 'off',
+    'import/no-mutable-exports': 'off',
+    'func-names': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,

@@ -26,7 +26,7 @@ export interface RenameModalPayload {
 // // Prices
 interface pricingSources {
   buff163: number,
-  steam_listings: number
+  steam_listing: number;
   skinport: number
   bitskins: string
 }

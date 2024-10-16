@@ -8,14 +8,30 @@ const pricingEmitter = new MyEmitter();
 
 // Get latest prices, if fail use backup
 
-async function getPricesBackup(cas) {
-  const pricesBackup = require('./backup/prices.json');
-  cas.setPricing(pricesBackup);
-}
+// async function getPricesBackup(cas) {
+//   const pricesBackup = require('./backup/prices.json');
+//   cas.setPricing(pricesBackup);
+// }
+
 async function getPrices(cas) {
-  const url = 'https://prices.csgotrader.app/latest/prices_v6.json';
+  return Promise.all([
+    getPrice(cas, 'steam', 'https://prices.csgotrader.app/latest/steam.json'),
+    getPrice(
+      cas,
+      'buff163',
+      'https://prices.csgotrader.app/latest/buff163.json'
+    ),
+    getPrice(
+      cas,
+      'skinport',
+      'https://prices.csgotrader.app/latest/skinport.json'
+    ),
+  ]);
+}
+
+function getPrice(cas, provider, providerUrl) {
   axios
-    .get(url)
+    .get(providerUrl)
     .then(function (response) {
       console.log(
         'prices, response',
@@ -23,18 +39,18 @@ async function getPrices(cas) {
         response !== null
       );
       if (typeof response === 'object' && response !== null) {
-        cas.setPricing(response.data, 'normal');
+        cas.setPricing(provider, response.data, 'normal');
       } else {
-        getPricesBackup(cas);
+        // getPricesBackup(cas);
       }
     })
     .catch(function (error) {
       console.log('Error prices', error);
-      getPricesBackup(cas);
+      // getPricesBackup(cas);
     });
 }
 
-let currencyCodes = {
+const currencyCodes = {
   1: 'USD',
   2: 'GBP',
   3: 'EUR',
@@ -84,6 +100,7 @@ let currencyCodes = {
   47: 'RON',
 };
 
+const FIRST_PRICING_PROVIDER = 'steam';
 // import { DOMParser } from 'xmldom'
 // RUN PROGRAMS
 class runItems {
@@ -99,6 +116,7 @@ class runItems {
     this.steamUser = steamUser;
     this.seenItems = {};
     this.packageToSend = {};
+    this.prices = {};
     getPrices(this);
     getValue('pricing.currency').then((returnValue) => {
       if (returnValue == undefined) {
@@ -106,47 +124,52 @@ class runItems {
       }
     });
   }
-  async setPricing(pricingData, commandFrom) {
+  async setPricing(provider, pricingData, commandFrom) {
     console.log('pricingSet', commandFrom);
-    this.prices = pricingData;
+    this.prices[provider] = pricingData;
   }
-  async makeSinglerequest(itemRow) {
+
+  async makeSingleRequest(itemRow) {
     let itemNamePricing = itemRow.item_name.replaceAll(
       '(Holo/Foil)',
       '(Holo-Foil)'
     );
     if (itemRow.item_wear_name !== undefined) {
       itemNamePricing = itemRow.item_name + ' (' + itemRow.item_wear_name + ')';
-      if (!this.prices[itemNamePricing] && this.prices[itemRow.item_name]) {
+      if (
+        !this.prices[FIRST_PRICING_PROVIDER][itemNamePricing] &&
+        this.prices[FIRST_PRICING_PROVIDER][itemRow.item_name]
+      ) {
         itemNamePricing = itemRow.item_name;
       }
     }
 
-    if (this.prices[itemNamePricing] !== undefined) {
+    if (this.prices[FIRST_PRICING_PROVIDER][itemNamePricing] !== undefined) {
       let pricingDict = {
-        buff163: this.prices[itemNamePricing]?.buff163.starting_at?.price,
-        steam_listing: this.prices[itemNamePricing]?.steam?.last_90d,
-        skinport: this.prices[itemNamePricing]?.skinport?.starting_at,
+        steam_listing: this.prices['steam'][itemNamePricing]?.last_90d,
+        buff163: this.prices['buff163'][itemNamePricing]?.starting_at?.price,
+        skinport: this.prices['skinport'][itemNamePricing]?.starting_at,
         bitskins: 0,
       };
-      if (this.prices[itemNamePricing]?.steam?.last_30d) {
+      if (this.prices['steam'][itemNamePricing]?.last_30d) {
         pricingDict.steam_listing =
-          this.prices[itemNamePricing]?.steam?.last_30d;
+          this.prices['steam'][itemNamePricing]?.last_30d;
       }
-      if (this.prices[itemNamePricing]?.steam?.last_7d) {
+      if (this.prices['steam'][itemNamePricing]?.last_7d) {
         pricingDict.steam_listing =
-          this.prices[itemNamePricing]?.steam?.last_7d;
+          this.prices['steam'][itemNamePricing]?.last_7d;
       }
 
-      if (this.prices[itemNamePricing]?.steam?.last_24h) {
+      if (this.prices['steam'][itemNamePricing]?.last_24h) {
         pricingDict.steam_listing =
-          this.prices[itemNamePricing]?.steam?.last_24h;
+          this.prices['steam'][itemNamePricing]?.last_24h;
       }
       if (
-        this.prices[itemNamePricing]?.steam?.last_7d == 0 &&
-        this.prices[itemNamePricing]?.buff163.starting_at?.price > 2000
+        this.prices['steam'][itemNamePricing]?.last_7d == 0 &&
+        this.prices['buff163'][itemNamePricing]?.starting_at?.price > 2000
       ) {
-        pricingDict.steam_listing = this.prices[itemNamePricing]?.buff163.starting_at?.price * 0.8;
+        pricingDict.steam_listing =
+          this.prices[itemNamePricing]?.buff163.starting_at?.price * 0.8;
       }
       itemRow['pricing'] = pricingDict;
       return itemRow;
@@ -165,7 +188,7 @@ class runItems {
     let returnRows = [] as any;
     itemRow.forEach((element) => {
       if (element.item_name !== undefined && element.item_moveable == true) {
-        this.makeSinglerequest(element).then((returnValue) => {
+        this.makeSingleRequest(element).then((returnValue) => {
           returnRows.push(returnValue);
         });
       }
@@ -176,7 +199,7 @@ class runItems {
   async handleTradeUp(itemRow) {
     let returnRows = [] as any;
     itemRow.forEach((element) => {
-      this.makeSinglerequest(element).then((returnValue) => {
+      this.makeSingleRequest(element).then((returnValue) => {
         returnRows.push(returnValue);
       });
     });

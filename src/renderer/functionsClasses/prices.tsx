@@ -15,17 +15,19 @@ export class ConvertPrices {
     return itemRow.item_name + itemRow.item_wear_name || '';
   }
 
-  getPrice(itemRow:ItemRow, nanToZero=false) {
+  getPrice(itemRow: ItemRow, nanToZero = false) {
+    const priceDict = this.prices.prices[this._getName(itemRow)];
+    const pricingProvider = this.settingsData.source.title;
+    const defaultPrice = priceDict?.['steam_listing'];
+    const price = priceDict?.[pricingProvider] || defaultPrice;
     let itemPrice =
-      this.prices.prices[this._getName(itemRow)]?.[
-        this.settingsData.source.title
-      ] * this.settingsData.currencyPrice[this.settingsData.currency];
+      price * this.settingsData.currencyPrice[this.settingsData.currency];
 
     if (nanToZero && isNaN(itemPrice)) {
-      return 0
+      return 0;
     }
 
-    return itemPrice
+    return itemPrice;
   }
 }
 
